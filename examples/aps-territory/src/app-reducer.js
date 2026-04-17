@@ -27,6 +27,9 @@ const APS_ADD_FAMILY = 'APS_ADD_FAMILY';
 const APS_UPDATE_FAMILY = 'APS_UPDATE_FAMILY';
 const APS_DELETE_FAMILY = 'APS_DELETE_FAMILY';
 const APS_IMPORT_FAMILIES = 'APS_IMPORT_FAMILIES';
+const APS_ADD_PATIENT = 'APS_ADD_PATIENT';
+const APS_UPDATE_PATIENT = 'APS_UPDATE_PATIENT';
+const APS_DELETE_PATIENT = 'APS_DELETE_PATIENT';
 
 export const setTab = createAction(APS_SET_TAB);
 export const setSelected = createAction(APS_SET_SELECTED);
@@ -45,12 +48,16 @@ export const addFamily = createAction(APS_ADD_FAMILY);
 export const updateFamily = createAction(APS_UPDATE_FAMILY);
 export const deleteFamily = createAction(APS_DELETE_FAMILY);
 export const importFamilies = createAction(APS_IMPORT_FAMILIES);
+export const addPatient = createAction(APS_ADD_PATIENT);
+export const updatePatient = createAction(APS_UPDATE_PATIENT);
+export const deletePatient = createAction(APS_DELETE_PATIENT);
 
 const initialState = {
   territories: [],
   microareas: [],
   teams: [],
   families: [],
+  patients: [],
   activeTab: 'territories',
   selectedTerritoryId: null,
   selectedMicroareaId: null
@@ -64,8 +71,7 @@ const appReducer = handleActions(
     [APS_ADD_TERRITORY]: (state, {payload}) => ({
       ...state,
       territories: [...state.territories, {
-        id: uuid(),
-        createdAt: new Date().toISOString(),
+        id: uuid(), createdAt: new Date().toISOString(),
         color: TERRITORY_COLORS[state.territories.length % TERRITORY_COLORS.length],
         ...payload
       }]
@@ -81,7 +87,11 @@ const appReducer = handleActions(
         territories: state.territories.filter(t => t.id !== payload),
         microareas: state.microareas.filter(m => m.territoryId !== payload),
         teams: state.teams.filter(t => t.territoryId !== payload),
-        families: state.families.filter(f => !maIds.includes(f.microareaId))
+        families: state.families.filter(f => !maIds.includes(f.microareaId)),
+        patients: state.patients.filter(p => {
+          const fam = state.families.find(f => f.id === p.familyId);
+          return fam && !maIds.includes(fam.microareaId);
+        })
       };
     },
 
@@ -108,16 +118,12 @@ const appReducer = handleActions(
       teams: state.teams.map(t => t.id === payload.id ? {...t, ...payload} : t)
     }),
     [APS_DELETE_TEAM]: (state, {payload}) => ({
-      ...state,
-      teams: state.teams.filter(t => t.id !== payload)
+      ...state, teams: state.teams.filter(t => t.id !== payload)
     }),
-
     [APS_ADD_MEMBER]: (state, {payload}) => ({
       ...state,
       teams: state.teams.map(t =>
-        t.id === payload.teamId
-          ? {...t, members: [...t.members, {id: uuid(), ...payload}]}
-          : t
+        t.id === payload.teamId ? {...t, members: [...t.members, {id: uuid(), ...payload}]} : t
       )
     }),
     [APS_DELETE_MEMBER]: (state, {payload}) => ({
@@ -128,11 +134,8 @@ const appReducer = handleActions(
     [APS_ADD_FAMILY]: (state, {payload}) => ({
       ...state,
       families: [...state.families, {
-        id: uuid(),
-        createdAt: new Date().toISOString(),
-        socialVulnerability: 'baixa',
-        memberCount: 1,
-        ...payload
+        id: uuid(), createdAt: new Date().toISOString(),
+        socialVulnerability: 'baixa', memberCount: 1, ...payload
       }]
     }),
     [APS_UPDATE_FAMILY]: (state, {payload}) => ({
@@ -141,20 +144,31 @@ const appReducer = handleActions(
     }),
     [APS_DELETE_FAMILY]: (state, {payload}) => ({
       ...state,
-      families: state.families.filter(f => f.id !== payload)
+      families: state.families.filter(f => f.id !== payload),
+      patients: state.patients.filter(p => p.familyId !== payload)
     }),
     [APS_IMPORT_FAMILIES]: (state, {payload}) => ({
       ...state,
-      families: [
-        ...state.families,
-        ...payload.map(f => ({
-          id: uuid(),
-          createdAt: new Date().toISOString(),
-          socialVulnerability: f.socialVulnerability || 'baixa',
-          memberCount: parseInt(f.memberCount, 10) || 1,
-          ...f
-        }))
-      ]
+      families: [...state.families, ...payload.map(f => ({
+        id: uuid(), createdAt: new Date().toISOString(),
+        socialVulnerability: f.socialVulnerability || 'baixa',
+        memberCount: parseInt(f.memberCount, 10) || 1, ...f
+      }))]
+    }),
+
+    [APS_ADD_PATIENT]: (state, {payload}) => ({
+      ...state,
+      patients: [...state.patients, {
+        id: uuid(), createdAt: new Date().toISOString(),
+        conditions: [], gender: 'F', ...payload
+      }]
+    }),
+    [APS_UPDATE_PATIENT]: (state, {payload}) => ({
+      ...state,
+      patients: state.patients.map(p => p.id === payload.id ? {...p, ...payload} : p)
+    }),
+    [APS_DELETE_PATIENT]: (state, {payload}) => ({
+      ...state, patients: state.patients.filter(p => p.id !== payload)
     })
   },
   initialState

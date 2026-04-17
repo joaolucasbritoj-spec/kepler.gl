@@ -9,11 +9,11 @@ export const MAP_ID = 'aps-map';
 
 function App() {
   const dispatch = useDispatch();
-  const {territories, microareas, families} = useSelector(state => state.app);
+  const {territories, microareas, families, patients} = useSelector(state => state.app);
   const mapReadyRef = useRef(false);
 
   useEffect(() => {
-    const datasets = buildKeplerDatasets(territories, microareas, families);
+    const datasets = buildKeplerDatasets(territories, microareas, families, patients);
     const isFirst = !mapReadyRef.current;
     mapReadyRef.current = true;
     dispatch(
@@ -23,7 +23,7 @@ function App() {
         ...(isFirst ? {config: {mapStyle: {styleType: 'light'}}} : {})
       }))
     );
-  }, [territories, microareas, families]);
+  }, [territories, microareas, families, patients]);
 
   return <Layout mapboxToken={MAPBOX_TOKEN} mapId={MAP_ID} />;
 }
